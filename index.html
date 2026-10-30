@@ -1,0 +1,1336 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Deep Vintage Mood - 4 Player Projector Memory Match</title>
+    <style>
+@import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap');
+
+:root {
+    /* Deep Vintage Mood Official Palette */
+    --vintage-navy: #244855;
+    --vintage-navy-dark: #162d36;
+    --vintage-coral: #E64833;
+    --vintage-brown: #874F41;
+    --vintage-sage: #90AEAD;
+    --vintage-cream: #FBE9D0;
+
+    --bg-main: radial-gradient(circle at 50% 18%, #2f5c6d 0%, #244855 52%, #142a33 100%);
+    --header-bg: linear-gradient(180deg, #874F41 0%, #683b30 100%);
+    --header-border: #FBE9D0;
+    --text-primary: #FBE9D0;
+    --banner-bg: #FBE9D0;
+    --banner-text: #244855;
+    --banner-border: #E64833;
+    --card-front-bg: linear-gradient(135deg, #874F41 0%, #63372c 100%);
+    --card-front-border: #FBE9D0;
+    --card-back-bg: #FBE9D0;
+    --btn-bg: linear-gradient(180deg, #E64833 0%, #c53522 100%);
+    --btn-border: #FBE9D0;
+    --btn-text: #FBE9D0;
+    --modal-bg: #FBE9D0;
+    --modal-border: #874F41;
+    --modal-text: #244855;
+
+    --font-heading: 'Fredoka', sans-serif;
+    --font-body: 'Plus Jakarta Sans', sans-serif;
+
+    /* Laptop-first: container + card size are auto-fitted by JS to the screen */
+    --container-max: 1320px;
+    --card-size: 80px;
+    --grid-gap: 10px;
+    --ui-scale: 1;
+}
+
+/* Alternate Theme */
+body.theme-classic {
+    --bg-main: radial-gradient(circle at 50% 20%, #90AEAD 0%, #244855 80%);
+    --header-bg: linear-gradient(180deg, #244855 0%, #162d36 100%);
+    --header-border: #90AEAD;
+    --card-front-bg: linear-gradient(135deg, #E64833 0%, #874F41 100%);
+}
+
+/* Projector mode: bigger container + bigger UI text */
+body.projector-mode {
+    --container-max: 1840px;
+    --ui-scale: 1.25;
+}
+body.wide-mode {
+    --container-max: 1680px;
+    --ui-scale: 1.1;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    user-select: none;
+}
+
+html, body {
+    height: 100%;
+}
+
+body {
+    background: var(--bg-main);
+    color: var(--text-primary);
+    font-family: var(--font-body);
+    height: 100vh;
+    height: 100dvh;
+    width: 100%;
+    overflow: hidden;
+    position: relative;
+    display: flex;
+    justify-content: center;
+    transition: background 0.4s ease, border-color 0.4s ease;
+    border: 8px solid #E64833;
+}
+
+#particles-canvas, #confetti-canvas {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 1;
+}
+#confetti-canvas { z-index: 1000; }
+
+/* ===== Main layout: header on top, board fills the rest, footer chips ===== */
+.app-container {
+    position: relative;
+    z-index: 5;
+    width: 100%;
+    max-width: var(--container-max);
+    height: 100%;
+    min-height: 0;
+    padding: 8px 14px 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    transition: max-width 0.35s ease;
+}
+
+/* ===== Header (2 clean rows, nothing absolute -> no overlap) ===== */
+.game-header {
+    flex: 0 0 auto;
+    width: 100%;
+    background: var(--header-bg);
+    border: 3px solid var(--header-border);
+    border-radius: 18px;
+    padding: 8px 12px;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.45), inset 0 2px 4px rgba(251, 233, 208, 0.25);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.hdr-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+}
+
+.brand {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex: 0 0 auto;
+}
+
+.brand img {
+    height: 42px;
+    width: auto;
+    filter: drop-shadow(0 4px 6px rgba(0,0,0,0.5));
+}
+
+.round-orb {
+    background: var(--vintage-navy);
+    border: 2.5px solid var(--vintage-cream);
+    color: var(--vintage-cream);
+    padding: 4px 14px;
+    border-radius: 16px;
+    font-family: var(--font-heading);
+    font-size: calc(0.95rem * var(--ui-scale));
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+    box-shadow: 0 3px 8px rgba(0,0,0,0.5);
+}
+
+/* Status banner */
+.parchment-banner {
+    flex: 1 1 auto;
+    min-width: 0;
+    height: calc(46px * var(--ui-scale));
+    background: var(--banner-bg);
+    color: var(--banner-text);
+    padding: 0 16px;
+    border-radius: 22px;
+    border: 3px solid var(--banner-border);
+    font-family: var(--font-heading);
+    font-size: calc(1.02rem * var(--ui-scale));
+    font-weight: 700;
+    line-height: 1.15;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+    text-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    overflow: hidden;
+}
+.parchment-banner #status-text {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+/* Control buttons */
+.controls-group {
+    display: flex;
+    gap: 7px;
+    align-items: center;
+    flex: 0 0 auto;
+}
+
+.orb-btn {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    border: 2.5px solid #FBE9D0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.05rem;
+    cursor: pointer;
+    color: #FBE9D0;
+    box-shadow: 0 3px 8px rgba(0,0,0,0.45);
+    transition: transform 0.15s;
+    flex: 0 0 auto;
+}
+.orb-btn:hover { transform: scale(1.1); }
+
+.orb-bulb { background: #E64833; }
+.orb-music { background: #244855; }
+.orb-projector { background: #874F41; }
+.orb-theme { background: #90AEAD; color: #244855; }
+
+select.game-select, .pill-btn {
+    padding: 7px 10px;
+    border-radius: 11px;
+    border: 2.5px solid var(--btn-border);
+    background: var(--btn-bg);
+    color: var(--btn-text);
+    font-family: var(--font-heading);
+    font-weight: 700;
+    font-size: 0.85rem;
+    cursor: pointer;
+    box-shadow: 0 3px 0 #162d36;
+    transition: transform 0.15s;
+    white-space: nowrap;
+}
+
+select.game-select {
+    background: #244855;
+    color: #FBE9D0;
+    border-color: #90AEAD;
+}
+
+.pill-btn:hover { transform: translateY(-2px); }
+
+input[type="file"] { display: none; }
+
+.select-group {
+    display: flex;
+    gap: 7px;
+    align-items: center;
+    flex: 0 0 auto;
+}
+
+/* ===== Players scoreboard ===== */
+.players-bar {
+    flex: 1 1 auto;
+    min-width: 0;
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 8px;
+}
+
+.player-pill {
+    padding: 5px 10px;
+    border-radius: 13px;
+    color: #FBE9D0;
+    font-weight: 800;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    opacity: 0.6;
+    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    border: 2.5px solid rgba(251, 233, 208, 0.35);
+    box-shadow: 0 3px 8px rgba(0,0,0,0.35);
+}
+
+.player-pill.active {
+    opacity: 1;
+    border-color: #FBE9D0;
+    box-shadow: 0 0 16px rgba(251, 233, 208, 0.7), 0 5px 12px rgba(0,0,0,0.5);
+}
+
+.p-coral  { background: linear-gradient(135deg, #E64833, #b83220); }
+.p-sage   { background: linear-gradient(135deg, #3b8d8a, #245e5c); }
+.p-amber  { background: linear-gradient(135deg, #d9822b, #a35a14); }
+.p-navy   { background: linear-gradient(135deg, #244855, #162d36); }
+
+.p-top, .p-bot {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+}
+
+.p-top {
+    font-size: calc(0.86rem * var(--ui-scale));
+    letter-spacing: 0.2px;
+}
+.p-name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    min-width: 0;
+}
+.p-score { white-space: nowrap; flex: 0 0 auto; }
+
+.p-rounds {
+    font-size: calc(0.7rem * var(--ui-scale));
+    background: rgba(20, 42, 51, 0.55);
+    color: #FBE9D0;
+    padding: 2px 7px;
+    border-radius: 9px;
+    border: 1px solid rgba(251, 233, 208, 0.25);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    min-width: 0;
+}
+
+.streak-row {
+    display: flex;
+    gap: 4px;
+    flex: 0 0 auto;
+}
+
+.streak-gem {
+    width: 11px;
+    height: 11px;
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.45);
+    border: 1.5px solid #FBE9D0;
+    transition: all 0.25s;
+}
+
+.streak-gem.lit {
+    background: #FBE9D0;
+    box-shadow: 0 0 8px #FBE9D0, 0 0 12px #E64833;
+    transform: scale(1.2);
+}
+
+/* ===== Board area: takes ALL remaining height, cards are auto-sized to fit ===== */
+.board-scroll-wrap {
+    flex: 1 1 0;
+    min-height: 0;
+    width: 100%;
+    padding: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: auto;
+}
+
+.game-board {
+    display: grid;
+    gap: var(--grid-gap);
+    margin: auto;
+    justify-content: center;
+    align-content: center;
+}
+
+/* ===== Footer chips ===== */
+.specs-bar {
+    flex: 0 0 auto;
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.spec-chip {
+    background: rgba(20, 42, 51, 0.75);
+    border: 1.5px solid #90AEAD;
+    color: #FBE9D0;
+    padding: 3px 11px;
+    border-radius: 14px;
+    font-size: 0.74rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.swatch-dot {
+    width: 11px;
+    height: 11px;
+    border-radius: 3px;
+    display: inline-block;
+    border: 1px solid #FBE9D0;
+}
+
+/* ===== Cards ===== */
+.card {
+    width: var(--card-size);
+    height: var(--card-size);
+    perspective: 1000px;
+    cursor: pointer;
+    transition: transform 0.2s ease;
+    position: relative;
+}
+.card:hover { transform: translateY(-3px); z-index: 3; }
+
+.card-inner {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    transform-style: preserve-3d;
+    transition: transform 0.48s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.card.flipped .card-inner,
+.card.matched .card-inner {
+    transform: rotateY(180deg);
+}
+
+.card.matched {
+    pointer-events: none;
+    animation: matchHighlight 0.65s ease forwards;
+    z-index: 4;
+}
+
+@keyframes matchHighlight {
+    0% { transform: scale(1); }
+    45% { transform: scale(1.14); filter: drop-shadow(0 0 16px #E64833); }
+    100% { transform: scale(0.93); opacity: 0.58; z-index: 1; }
+}
+
+.card-front, .card-back {
+    position: absolute;
+    inset: 0;
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+    border-radius: calc(var(--card-size) * 0.18);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 3px solid var(--card-front-border);
+    box-shadow: 0 calc(var(--card-size) * 0.06) 0 #152c35, 0 calc(var(--card-size) * 0.12) calc(var(--card-size) * 0.2) rgba(0, 0, 0, 0.5);
+}
+
+.card-front {
+    background: var(--card-front-bg);
+    position: relative;
+    overflow: hidden;
+}
+
+/* Fallback pattern in case img3.svg is missing */
+.card-front::before {
+    content: "";
+    position: absolute;
+    inset: 18%;
+    border: 2px solid rgba(251, 233, 208, 0.45);
+    border-radius: 30%;
+    transform: rotate(45deg);
+}
+
+.card-front::after {
+    content: "";
+    position: absolute;
+    inset: 12%;
+    background: url('img3.svg') center/contain no-repeat;
+    opacity: 0.9;
+}
+
+.card-back {
+    background: var(--card-back-bg);
+    color: #244855;
+    transform: rotateY(180deg);
+    font-size: calc(var(--card-size) * 0.56);
+    line-height: 1;
+    overflow: hidden;
+    border-color: #E64833;
+}
+
+.card-back img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+/* ===== Modals ===== */
+.modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(20, 42, 51, 0.88);
+    backdrop-filter: blur(6px);
+    z-index: 900;
+    justify-content: center;
+    align-items: center;
+    padding: 14px;
+}
+
+.modal-overlay.show {
+    display: flex;
+    animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.scroll-modal {
+    background: var(--modal-bg);
+    border: 6px solid var(--modal-border);
+    border-radius: 26px;
+    max-width: 520px;
+    width: 100%;
+    max-height: 94vh;
+    overflow-y: auto;
+    padding: 20px 24px 24px;
+    text-align: center;
+    color: var(--modal-text);
+    box-shadow: 0 24px 60px rgba(0,0,0,0.75);
+    animation: popScale 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes popScale {
+    from { transform: scale(0.78); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+}
+
+.wooden-sign-header {
+    background: linear-gradient(180deg, #E64833 0%, #874F41 100%);
+    color: #FBE9D0;
+    font-family: var(--font-heading);
+    font-size: 1.7rem;
+    padding: 8px 22px;
+    border-radius: 16px;
+    border: 3px solid #FBE9D0;
+    margin-bottom: 12px;
+    box-shadow: 0 6px 14px rgba(0,0,0,0.5);
+}
+
+.stars-row {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    margin: 8px 0 12px;
+    font-size: 2.4rem;
+}
+
+.modal-desc {
+    font-size: 1rem;
+    font-weight: 700;
+    margin-bottom: 14px;
+    line-height: 1.5;
+    color: #244855;
+}
+
+.reward-box {
+    background: rgba(36, 72, 85, 0.1);
+    border: 2px dashed #874F41;
+    border-radius: 14px;
+    padding: 10px;
+    margin-bottom: 18px;
+    font-weight: 800;
+    font-size: 0.92rem;
+    color: #874F41;
+}
+
+.big-play-btn {
+    background: linear-gradient(180deg, #E64833 0%, #b83220 100%);
+    color: #FBE9D0;
+    border: 3px solid #244855;
+    padding: 11px 34px;
+    font-family: var(--font-heading);
+    font-size: 1.3rem;
+    font-weight: 700;
+    border-radius: 22px;
+    cursor: pointer;
+    box-shadow: 0 5px 0 #244855, 0 10px 20px rgba(0,0,0,0.4);
+    transition: transform 0.15s;
+}
+
+.big-play-btn:hover { transform: scale(1.05); }
+
+/* ===== Smaller laptops / narrow windows: let header rows wrap instead of overlapping ===== */
+@media (max-width: 1180px) {
+    .hdr-row { flex-wrap: wrap; }
+    .parchment-banner { order: 3; flex-basis: 100%; }
+    .select-group { flex-wrap: wrap; }
+}
+
+/* Short laptop screens (e.g. 1366x768): tighten vertical spacing */
+@media (max-height: 760px) {
+    .app-container { gap: 6px; padding: 6px 12px 6px; }
+    .game-header { padding: 6px 10px; gap: 6px; }
+    .brand img { height: 34px; }
+    .parchment-banner { height: 40px; }
+    .orb-btn { width: 34px; height: 34px; font-size: 0.95rem; }
+    .spec-chip { padding: 2px 9px; font-size: 0.7rem; }
+}
+
+@media (min-width: 2200px) {
+    body { font-size: 1.25rem; }
+    :root { --container-max: 2200px; }
+}
+    </style>
+</head>
+<body>
+
+    <canvas id="particles-canvas"></canvas>
+    <canvas id="confetti-canvas"></canvas>
+
+    <div class="app-container">
+        <header class="game-header">
+            <!-- Row 1: Brand + Status Banner + Controls -->
+            <div class="hdr-row">
+                <div class="brand">
+                    <img src="img2.svg" id="header-mascot" alt="Crest" onerror="this.style.display='none'">
+                    <div class="round-orb" id="round-badge">ROUND 1</div>
+                </div>
+
+                <div class="parchment-banner">
+                    <span>✨</span>
+                    <span id="status-text">Find all pairs!</span>
+                    <span>✨</span>
+                </div>
+
+                <div class="controls-group">
+                    <button class="orb-btn orb-projector" onclick="toggleProjectorMode()" title="Projector Fullscreen Mode (High-Contrast Stage View)">📽️</button>
+                    <button class="orb-btn orb-bulb" onclick="peekAllCards()" title="Hint: Show All Cards for 2 Seconds">💡</button>
+                    <button class="orb-btn orb-music" id="music-btn" onclick="toggleMusicBtn()" title="Toggle Engaging Background Music">🔇</button>
+                    <button class="orb-btn orb-theme" onclick="switchTheme()" title="Switch Vintage Style">🎨</button>
+                    <label class="pill-btn" title="Upload your own custom photos">
+                        + Photos
+                        <input type="file" multiple accept="image/*" onchange="handleCustomPhotos(event)">
+                    </label>
+                    <button class="pill-btn" onclick="fullResetTournament()">Reset</button>
+                </div>
+            </div>
+
+            <!-- Row 2: 4 Players Scoreboard + Settings -->
+            <div class="hdr-row">
+                <div class="players-bar" id="players-bar"></div>
+
+                <div class="select-group">
+                    <select id="screen-res" class="game-select" onchange="changeScreenResolution()" title="Screen size">
+                        <option value="laptop" selected>Laptop</option>
+                        <option value="1920">Full HD (1920×1080)</option>
+                        <option value="projector">Projector / Ultra HD</option>
+                    </select>
+
+                    <select id="grid-mode" class="game-select" onchange="initRound(false)" title="Grid size">
+                        <option value="4x4">4×4 Grid (16 Cards)</option>
+                        <option value="6x6" selected>6×6 Grid (36 Cards)</option>
+                        <option value="34cards">Video Grid (34 Cards)</option>
+                        <option value="34x6">34 Col × 6 Row (204 Cards)</option>
+                    </select>
+
+                    <select id="preview-sec" class="game-select" onchange="initRound(false)" title="Preview time">
+                        <option value="5">Preview: 5s</option>
+                        <option value="8">Preview: 8s</option>
+                        <option value="12">Preview: 12s</option>
+                    </select>
+                </div>
+            </div>
+        </header>
+
+        <!-- 3D Memory Tile Grid (auto-fits to screen) -->
+        <div class="board-scroll-wrap" id="board-wrap">
+            <div class="game-board" id="board"></div>
+        </div>
+
+        <!-- Footer chips -->
+        <div class="specs-bar">
+            <div class="spec-chip" id="res-status-chip">💻 Laptop Mode (Auto-fit Screen)</div>
+            <div class="spec-chip">
+                🎨 Deep Vintage Mood:
+                <span class="swatch-dot" style="background:#244855" title="#244855 Deep Navy"></span>
+                <span class="swatch-dot" style="background:#E64833" title="#E64833 Terracotta Red"></span>
+                <span class="swatch-dot" style="background:#874F41" title="#874F41 Earthy Brown"></span>
+                <span class="swatch-dot" style="background:#90AEAD" title="#90AEAD Muted Sage"></span>
+                <span class="swatch-dot" style="background:#FBE9D0" title="#FBE9D0 Warm Cream"></span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Splash Screen Modal -->
+    <div class="modal-overlay show" id="splash-modal">
+        <div class="scroll-modal">
+            <div class="wooden-sign-header">Deep Vintage Memory</div>
+            <img src="img2.svg" alt="Vintage Crest" style="width:100px; margin: 0 auto 8px; display:block;" onerror="this.style.display='none'">
+            <p class="modal-desc">
+                <strong>Projector-Ready 4-Player Memory Match!</strong><br>
+                • <strong>Screen Size:</strong> Laptop (auto-fit), 1920px Full HD, aur 2560–3840px Ultra HD Projector Mode.<br>
+                • <strong>Color Theme:</strong> Deep Vintage Mood (<code>#244855</code>, <code>#E64833</code>, <code>#874F41</code>, <code>#90AEAD</code>, <code>#FBE9D0</code>).<br>
+                • <strong>Rules:</strong> Lagaatar 4 Pairs ya 4 Continuous Rounds jeetne par Grand Champion Fanfare! Har round ke baad Naye Photos aur Shuffled Cards.
+            </p>
+            <button class="big-play-btn" onclick="startFromSplash()">Launch Game ▶</button>
+        </div>
+    </div>
+
+    <!-- Level Up / Round Complete Modal -->
+    <div class="modal-overlay" id="round-modal">
+        <div class="scroll-modal">
+            <div class="wooden-sign-header" id="modal-header-title">Round Complete!</div>
+            <div class="stars-row">
+                <span>⭐</span>
+                <span>🌟</span>
+                <span>⭐</span>
+            </div>
+            <p class="modal-desc" id="modal-desc-text">Round Completed!</p>
+            <div class="reward-box" id="modal-reward-text">
+                🧩 Next Round: Fresh Photos & Shuffled Board Ready!
+            </div>
+            <button class="big-play-btn" id="modal-next-btn" onclick="initRound(true)">Next Round ▶</button>
+        </div>
+    </div>
+
+    <script>
+// Web Audio API Music & Sound Effects Engine (Works offline without external MP3 dependencies)
+class GameAudioEngine {
+    constructor() {
+        this.ctx = null;
+        this.isMusicPlaying = false;
+        this.musicInterval = null;
+        this.step = 0;
+        // Engaging Retro-Synth & Marimba Groove (Hz)
+        this.melody = [523.25, 659.25, 783.99, 659.25, 880.00, 783.99, 659.25, 587.33, 523.25, 587.33, 659.25, 523.25];
+        this.bass = [261.63, 261.63, 196.00, 196.00, 220.00, 220.00, 174.61, 196.00];
+    }
+
+    initContext() {
+        if (!this.ctx) {
+            this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+        if (this.ctx.state === 'suspended') {
+            this.ctx.resume();
+        }
+    }
+
+    playNote(freq, duration = 0.18, type = 'sine', gainVal = 0.12, delay = 0) {
+        try {
+            this.initContext();
+            const startTime = this.ctx.currentTime + delay;
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+            osc.type = type;
+            osc.frequency.setValueAtTime(freq, startTime);
+
+            gain.gain.setValueAtTime(gainVal, startTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
+
+            osc.connect(gain);
+            gain.connect(this.ctx.destination);
+            osc.start(startTime);
+            osc.stop(startTime + duration);
+        } catch (e) {}
+    }
+
+    toggleMusic() {
+        this.initContext();
+        if (this.isMusicPlaying) {
+            this.stopMusic();
+            return false;
+        } else {
+            this.startMusic();
+            return true;
+        }
+    }
+
+    startMusic() {
+        if (this.isMusicPlaying) return;
+        this.isMusicPlaying = true;
+        this.step = 0;
+        this.musicInterval = setInterval(() => {
+            if (!this.isMusicPlaying) return;
+            const note = this.melody[this.step % this.melody.length];
+            const bassNote = this.bass[Math.floor(this.step / 2) % this.bass.length];
+            this.playNote(note, 0.22, 'triangle', 0.055);
+            if (this.step % 2 === 0) {
+                this.playNote(bassNote, 0.35, 'sine', 0.045);
+            }
+            this.step++;
+        }, 280);
+    }
+
+    stopMusic() {
+        this.isMusicPlaying = false;
+        if (this.musicInterval) {
+            clearInterval(this.musicInterval);
+            this.musicInterval = null;
+        }
+    }
+
+    sfxFlip() {
+        this.playNote(480, 0.09, 'triangle', 0.14);
+        this.playNote(620, 0.07, 'sine', 0.1, 0.04);
+    }
+
+    sfxMatch(streakCount = 1) {
+        const base = 523.25 + (streakCount * 65);
+        this.playNote(base, 0.16, 'sine', 0.16, 0);
+        this.playNote(base * 1.25, 0.25, 'triangle', 0.16, 0.09);
+    }
+
+    sfxMiss() {
+        this.playNote(260, 0.18, 'sawtooth', 0.09, 0);
+        this.playNote(195, 0.24, 'sawtooth', 0.09, 0.12);
+    }
+
+    sfxRoundComplete() {
+        const notes = [523.25, 659.25, 783.99, 1046.50];
+        notes.forEach((n, i) => {
+            this.playNote(n, 0.28, 'triangle', 0.18, i * 0.11);
+        });
+    }
+
+    sfxGrandChampionFanfare() {
+        const fanfare = [
+            { f: 523.25, d: 0.15, t: 0.0 },
+            { f: 523.25, d: 0.15, t: 0.16 },
+            { f: 523.25, d: 0.15, t: 0.32 },
+            { f: 659.25, d: 0.35, t: 0.48 },
+            { f: 587.33, d: 0.20, t: 0.85 },
+            { f: 659.25, d: 0.20, t: 1.07 },
+            { f: 783.99, d: 0.45, t: 1.29 },
+            { f: 1046.50, d: 0.70, t: 1.76 }
+        ];
+        fanfare.forEach(n => {
+            this.playNote(n.f, n.d, 'square', 0.15, n.t);
+            this.playNote(n.f * 0.5, n.d, 'triangle', 0.12, n.t);
+        });
+    }
+}
+
+const soundEngine = new GameAudioEngine();
+
+    </script>
+    <script>
+// Multi-Round Photo Decks (Automatically loads a fresh set of icons/photos & shuffles after every round!)
+const roundPhotoDecks = [
+    // Round 1: Retro Adventure & Treasures
+    ['🏎️','🚀','🛸','🧭','🕰️','💎','👑','🗝️','🔮','⚔️','🛡️','🏹','🏆','🥇','🎯','🎲','🎸','🎺',
+     '🦊','🦁','🐯','🐼','🦉','🦅','🦋','🐙','🐬','🦖','🐉','🦄','🌟','⚡','🔥','🌙','🪐','☄️'],
+    // Round 2: Nature & Tropical Fiesta
+    ['🌴','🌺','🌻','🍄','🍀','🍍','🥥','🍉','🍓','🍒','🥝','🥑','🥭','🍑','🍋','🍊','🍎','🍇',
+     '🐸','🐵','🐢','🦜','🦩','🦚','🐝','🐞','🦀','🐡','🐠','🐳','🦈','🐊','🐘','🦒','🦓','🦘'],
+    // Round 3: Sweet Treats & Retro Cafe
+    ['🍩','🍪','🎂','🧁','🥧','🍫','🍬','🍭','🍮','🍯','🍨','🍦','🥐','🥯','🥞','🧇','🍕','🍔',
+     '🍟','🌭','🌮','🌯','🍿','🥨','🧀','🍣','🍱','🍜','🍙','🥟','🍧','🧃','🧋','🍹','☕','🫖'],
+    // Round 4: Sports & World Landmarks
+    ['⚽','🏀','🏈','⚾','🎾','🏐','🏉','🎱','🏓','🏸','🥊','🛹','🛼','🚲','✈️','⛵','🚁','🚂',
+     '🏰','🗽','🗼','🎢','🎡','🎠','🏖️','🌋','⛰️','🏕️','📷','🔭','🔬','💡','🧩','🎭','🎨','🪩']
+];
+
+const megaExtraPool = [
+    '🐶','🐱','🐭','🐹','🐰','🐻','🐨','🐮','🐷','🐔','🐧','🐦','🐤','🦆','🦇','🐺','🐗','🐴',
+    '🐛','🐌','🐜','🦟','🦗','🕷','🐍','🦎','🦕','🦑','🦐','🦞','🍐','🍌','🍈','🍅','🍆','🥦',
+    '🥬','🥒','🌶','🌽','🥕','🧄','🧅','🥔','🍠','🍞','🥖','🥚','🍳','🥎','🥅','🏒','🏑','🏏'
+];
+
+let customUploadedPhotos = [];
+let currentRound = 1;
+let currentTheme = 'vintage';
+
+// 4 Players using Deep Vintage Mood harmonic colors
+const players = [
+    { name: 'Terracotta', cls: 'p-coral', color: '#E64833', score: 0, pairStreak: 0, roundWins: 0, roundStreak: 0 },
+    { name: 'Sage Teal', cls: 'p-sage', color: '#90AEAD', score: 0, pairStreak: 0, roundWins: 0, roundStreak: 0 },
+    { name: 'Vintage Gold', cls: 'p-amber', color: '#d9822b', score: 0, pairStreak: 0, roundWins: 0, roundStreak: 0 },
+    { name: 'Deep Navy', cls: 'p-navy', color: '#244855', score: 0, pairStreak: 0, roundWins: 0, roundStreak: 0 }
+];
+
+let currentTurn = 0;
+let flippedCards = [];
+let lockBoard = true;
+let matchedPairs = 0;
+let totalPairs = 0;
+let previewTimer = null;
+let countInterval = null;
+
+/* ---------- Auto-fit: sizes cards so the whole board fits the screen (no overlap, no scroll) ---------- */
+function fitBoard() {
+    const wrap = document.getElementById('board-wrap');
+    const board = document.getElementById('board');
+    const cols = parseInt(board.dataset.cols, 10);
+    const rows = parseInt(board.dataset.rows, 10);
+    if (!cols || !rows) return;
+
+    const availW = wrap.clientWidth - 14;
+    const availH = wrap.clientHeight - 14;
+    const gap = cols > 12 ? 3 : (rows >= 6 ? 8 : 12);
+
+    const maxCard = document.body.classList.contains('projector-mode') ? 190 : 150;
+    let size = Math.floor(Math.min(
+        (availW - gap * (cols - 1)) / cols,
+        (availH - gap * (rows - 1)) / rows
+    ));
+    size = Math.max(18, Math.min(size, maxCard));
+
+    board.style.setProperty('--card-size', size + 'px');
+    board.style.setProperty('--grid-gap', gap + 'px');
+    board.style.gridTemplateColumns = `repeat(${cols}, ${size}px)`;
+}
+
+window.addEventListener('resize', fitBoard);
+if (window.ResizeObserver) {
+    new ResizeObserver(() => fitBoard()).observe(document.getElementById('board-wrap'));
+}
+
+function startFromSplash() {
+    document.getElementById('splash-modal').classList.remove('show');
+    if (!soundEngine.isMusicPlaying) {
+        const playing = soundEngine.toggleMusic();
+        updateMusicButton(playing);
+    }
+    initRound(false);
+}
+
+function toggleMusicBtn() {
+    const playing = soundEngine.toggleMusic();
+    updateMusicButton(playing);
+}
+
+function updateMusicButton(playing) {
+    const btn = document.getElementById('music-btn');
+    btn.innerText = playing ? '🎵' : '🔇';
+}
+
+// Toggle Projector Fullscreen & High-Contrast Large Scaling
+function toggleProjectorMode() {
+    const resSelect = document.getElementById('screen-res');
+    const isProj = !document.body.classList.contains('projector-mode');
+    resSelect.value = isProj ? 'projector' : 'laptop';
+    changeScreenResolution();
+}
+
+function changeScreenResolution() {
+    const val = document.getElementById('screen-res').value;
+    const body = document.body;
+    body.classList.remove('projector-mode', 'wide-mode');
+
+    if (val === '1920') {
+        body.classList.add('wide-mode');
+    } else if (val === 'projector') {
+        body.classList.add('projector-mode');
+    }
+
+    if (val === 'projector') {
+        if (!document.fullscreenElement && document.documentElement.requestFullscreen) {
+            document.documentElement.requestFullscreen().catch(() => {});
+        }
+    } else if (document.fullscreenElement && document.exitFullscreen) {
+        document.exitFullscreen().catch(() => {});
+    }
+
+    updateResolutionLabel();
+    // Just re-fit the board — game progress / scores stay untouched
+    setTimeout(fitBoard, 380);
+    fitBoard();
+}
+
+function updateResolutionLabel() {
+    const val = document.getElementById('screen-res').value;
+    const chip = document.getElementById('res-status-chip');
+    if (val === 'laptop') {
+        chip.innerText = '💻 Laptop Mode (Auto-fit Screen)';
+    } else if (val === '1920') {
+        chip.innerText = '🖥️ Full HD Display: 1920×1080px';
+    } else {
+        chip.innerText = '📽️ Projector / Ultra HD Mode (2560px–3840px High-Contrast)';
+    }
+}
+
+function switchTheme() {
+    const body = document.body;
+    const mascotImg = document.getElementById('header-mascot');
+    mascotImg.style.display = '';
+    if (currentTheme === 'vintage') {
+        currentTheme = 'classic';
+        body.classList.add('theme-classic');
+        mascotImg.onerror = () => { mascotImg.onerror = () => { mascotImg.style.display = 'none'; }; mascotImg.src = 'img2.svg'; };
+        mascotImg.src = 'assets/lizard_mascot.svg';
+    } else {
+        currentTheme = 'vintage';
+        body.classList.remove('theme-classic');
+        mascotImg.onerror = () => { mascotImg.style.display = 'none'; };
+        mascotImg.src = 'img2.svg';
+    }
+}
+
+function handleCustomPhotos(event) {
+    const files = Array.from(event.target.files);
+    if (!files.length) return;
+    customUploadedPhotos = files.map(f => URL.createObjectURL(f));
+    initRound(false);
+}
+
+function initRound(advanceToNextRound = false) {
+    clearTimeout(previewTimer);
+    clearInterval(countInterval);
+    document.getElementById('round-modal').classList.remove('show');
+
+    if (advanceToNextRound) {
+        currentRound++;
+    }
+
+    document.getElementById('round-badge').innerText = `ROUND ${currentRound}`;
+
+    const mode = document.getElementById('grid-mode').value;
+
+    let cols = 6, totalCards = 36;
+    if (mode === '4x4') { cols = 4; totalCards = 16; }
+    else if (mode === '6x6') { cols = 6; totalCards = 36; }
+    else if (mode === '34cards') { cols = 6; totalCards = 34; }
+    else if (mode === '34x6') { cols = 34; totalCards = 204; }
+
+    totalPairs = Math.floor(totalCards / 2);
+    matchedPairs = 0;
+    flippedCards = [];
+    lockBoard = true;
+
+    players.forEach(p => {
+        p.score = 0;
+        p.pairStreak = 0;
+    });
+    renderPlayersBar();
+
+    const board = document.getElementById('board');
+    board.dataset.cols = cols;
+    board.dataset.rows = Math.ceil(totalCards / cols);
+    board.innerHTML = '';
+
+    // Load fresh photos for every new round
+    let deckSource = [];
+    if (customUploadedPhotos.length > 0) {
+        const offset = ((currentRound - 1) * 5) % customUploadedPhotos.length;
+        deckSource = [...customUploadedPhotos.slice(offset), ...customUploadedPhotos.slice(0, offset)];
+    } else {
+        const roundDeck = roundPhotoDecks[(currentRound - 1) % roundPhotoDecks.length];
+        deckSource = [...roundDeck, ...megaExtraPool];
+    }
+
+    let selectedItems = [];
+    for (let i = 0; i < totalPairs; i++) {
+        const item = deckSource[i % deckSource.length];
+        selectedItems.push(item, item);
+    }
+
+    // Fisher-Yates shuffle
+    for (let i = selectedItems.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [selectedItems[i], selectedItems[j]] = [selectedItems[j], selectedItems[i]];
+    }
+
+    selectedItems.forEach((item) => {
+        const card = document.createElement('div');
+        card.className = 'card flipped';
+        card.dataset.val = item;
+
+        const isImg = item.startsWith('blob:') || item.includes('.') || item.startsWith('http');
+        const innerContent = isImg ? `<img src="${item}" alt="card">` : item;
+
+        card.innerHTML = `
+            <div class="card-inner">
+                <div class="card-front"></div>
+                <div class="card-back">${innerContent}</div>
+            </div>
+        `;
+        card.addEventListener('click', () => onCardClick(card));
+        board.appendChild(card);
+    });
+
+    fitBoard();
+    requestAnimationFrame(fitBoard);
+
+    let previewSec = parseInt(document.getElementById('preview-sec').value, 10);
+    const banner = document.getElementById('status-text');
+    banner.innerText = `Round ${currentRound}: Sabhi Contestants Photos Yaad Karein! (${previewSec}s)`;
+
+    countInterval = setInterval(() => {
+        previewSec--;
+        if (previewSec > 0) {
+            banner.innerText = `Round ${currentRound}: Sabhi Contestants Photos Yaad Karein! (${previewSec}s)`;
+        } else {
+            clearInterval(countInterval);
+        }
+    }, 1000);
+
+    previewTimer = setTimeout(() => {
+        document.querySelectorAll('.card').forEach(c => c.classList.remove('flipped'));
+        lockBoard = false;
+        updateBannerTurn();
+    }, parseInt(document.getElementById('preview-sec').value, 10) * 1000);
+}
+
+function renderPlayersBar() {
+    const bar = document.getElementById('players-bar');
+    bar.innerHTML = players.map((p, idx) => {
+        let gems = '';
+        for (let g = 1; g <= 4; g++) {
+            gems += `<div class="streak-gem ${g <= p.pairStreak ? 'lit' : ''}" title="Continuous Pair Streak"></div>`;
+        }
+        return `
+            <div class="player-pill ${p.cls} ${idx === currentTurn ? 'active' : ''}">
+                <div class="p-top">
+                    <span class="p-name">P${idx + 1}: ${p.name}</span>
+                    <span class="p-score">${p.score} Pairs</span>
+                </div>
+                <div class="p-bot">
+                    <span class="p-rounds">Rounds Won: ${p.roundWins} (🔥${p.roundStreak}/4)</span>
+                    <div class="streak-row">${gems}</div>
+                </div>
+            </div>
+        `;
+    }).join('');
+    document.body.style.borderColor = players[currentTurn].color;
+}
+
+function updateBannerTurn() {
+    const p = players[currentTurn];
+    document.getElementById('status-text').innerText =
+        `Player ${currentTurn + 1} (${p.name}) ki Turn! • Pair Streak: ${p.pairStreak}/4 • Round Streak: ${p.roundStreak}/4`;
+    renderPlayersBar();
+}
+
+function peekAllCards() {
+    if (lockBoard) return;
+    lockBoard = true;
+    soundEngine.sfxFlip();
+    const unmatched = document.querySelectorAll('.card:not(.matched)');
+    unmatched.forEach(c => c.classList.add('flipped'));
+    setTimeout(() => {
+        unmatched.forEach(c => {
+            if (!flippedCards.includes(c)) c.classList.remove('flipped');
+        });
+        lockBoard = false;
+    }, 2000);
+}
+
+function onCardClick(card) {
+    if (lockBoard || card.classList.contains('flipped') || card.classList.contains('matched')) return;
+
+    soundEngine.sfxFlip();
+    card.classList.add('flipped');
+    flippedCards.push(card);
+
+    if (flippedCards.length === 2) {
+        lockBoard = true;
+        evaluateMatch();
+    }
+}
+
+function evaluateMatch() {
+    const [c1, c2] = flippedCards;
+    const isMatch = c1.dataset.val === c2.dataset.val;
+
+    if (isMatch) {
+        const p = players[currentTurn];
+        p.score += 1;
+        p.pairStreak += 1;
+        matchedPairs += 1;
+        soundEngine.sfxMatch(p.pairStreak);
+
+        c1.classList.add('matched');
+        c2.classList.add('matched');
+        flippedCards = [];
+        renderPlayersBar();
+
+        // Win Rule 1: 4 Continuous Pairs in a row
+        if (p.pairStreak === 4) {
+            handleRoundWin(p, `Lagaatar 4 Pairs (4-Pair Continuous Streak) banakar Round ${currentRound} jeet liya!`);
+            return;
+        }
+
+        // Win Rule 2: All cards matched
+        if (matchedPairs === totalPairs) {
+            let winner = [...players].sort((a, b) => b.score - a.score)[0];
+            handleRoundWin(winner, `Saare cards match ho gaye! Highest Score (${winner.score} Pairs) ke saath Round ${currentRound} jeet liya!`);
+            return;
+        }
+
+        lockBoard = false;
+        updateBannerTurn();
+    } else {
+        soundEngine.sfxMiss();
+        players[currentTurn].pairStreak = 0;
+        setTimeout(() => {
+            c1.classList.remove('flipped');
+            c2.classList.remove('flipped');
+            flippedCards = [];
+            currentTurn = (currentTurn + 1) % players.length;
+            lockBoard = false;
+            updateBannerTurn();
+        }, 850);
+    }
+}
+
+function handleRoundWin(winnerPlayer, reasonText) {
+    lockBoard = true;
+
+    players.forEach(p => {
+        if (p === winnerPlayer) {
+            p.roundWins += 1;
+            p.roundStreak += 1;
+        } else {
+            p.roundStreak = 0;
+        }
+    });
+
+    renderPlayersBar();
+
+    const modal = document.getElementById('round-modal');
+    const titleEl = document.getElementById('modal-header-title');
+    const descEl = document.getElementById('modal-desc-text');
+    const rewardEl = document.getElementById('modal-reward-text');
+    const nextBtn = document.getElementById('modal-next-btn');
+
+    if (winnerPlayer.roundStreak >= 4 || winnerPlayer.pairStreak >= 4) {
+        soundEngine.sfxGrandChampionFanfare();
+        launchCelebrationConfetti(200);
+        titleEl.innerText = `🏆 GRAND CHAMPION!`;
+        descEl.innerText = `${winnerPlayer.name} Player ne kamaal kar diya! ${reasonText}`;
+        rewardEl.innerText = `🌟 4-Streak Mega Victory Sound & Celebration! Agle Round mein Naye Photos aur Shuffled Cards aayenge!`;
+        nextBtn.innerText = `Next Round (New Photos) ▶`;
+        if (winnerPlayer.roundStreak >= 4) {
+            winnerPlayer.roundStreak = 0;
+        }
+    } else {
+        soundEngine.sfxRoundComplete();
+        launchCelebrationConfetti(95);
+        titleEl.innerText = `Round ${currentRound} Complete!`;
+        descEl.innerText = `${winnerPlayer.name} Wins Round ${currentRound}! ${reasonText}`;
+        rewardEl.innerText = `🔥 ${winnerPlayer.name} Continuous Round Streak: ${winnerPlayer.roundStreak} / 4 • Next Round loads fresh photos!`;
+        nextBtn.innerText = `Start Round ${currentRound + 1} ▶`;
+    }
+
+    modal.classList.add('show');
+}
+
+function fullResetTournament() {
+    currentRound = 1;
+    currentTurn = 0;
+    players.forEach(p => {
+        p.score = 0;
+        p.pairStreak = 0;
+        p.roundWins = 0;
+        p.roundStreak = 0;
+    });
+    initRound(false);
+}
+
+/* --- Ambient Vintage Dust/Sparks & Celebration Confetti Canvas --- */
+const pCanvas = document.getElementById('particles-canvas');
+const pCtx = pCanvas.getContext('2d');
+const cCanvas = document.getElementById('confetti-canvas');
+const cCtx = cCanvas.getContext('2d');
+
+let dustMotes = [];
+let confettiPieces = [];
+
+function resizeCanvases() {
+    pCanvas.width = window.innerWidth;
+    pCanvas.height = window.innerHeight;
+    cCanvas.width = window.innerWidth;
+    cCanvas.height = window.innerHeight;
+}
+window.addEventListener('resize', resizeCanvases);
+resizeCanvases();
+
+for (let i = 0; i < 36; i++) {
+    dustMotes.push({
+        x: Math.random() * window.innerWidth,
+        y: Math.random() * window.innerHeight,
+        r: Math.random() * 3.2 + 1.2,
+        dx: (Math.random() - 0.5) * 0.55,
+        dy: (Math.random() - 0.5) * 0.55
+    });
+}
+
+function launchCelebrationConfetti(count = 130) {
+    const colors = ['#E64833', '#FBE9D0', '#90AEAD', '#874F41', '#244855', '#ffd32a'];
+    for (let i = 0; i < count; i++) {
+        confettiPieces.push({
+            x: window.innerWidth / 2 + (Math.random() - 0.5) * 220,
+            y: window.innerHeight / 2 - 60,
+            vx: (Math.random() - 0.5) * 15,
+            vy: Math.random() * -15 - 4,
+            size: Math.random() * 10 + 6,
+            color: colors[Math.floor(Math.random() * colors.length)],
+            rot: Math.random() * 360,
+            vRot: (Math.random() - 0.5) * 12
+        });
+    }
+}
+
+function animateVisuals() {
+    pCtx.clearRect(0, 0, pCanvas.width, pCanvas.height);
+    dustMotes.forEach(f => {
+        f.x += f.dx;
+        f.y += f.dy;
+        if (f.x < 0) f.x = pCanvas.width;
+        if (f.x > pCanvas.width) f.x = 0;
+        if (f.y < 0) f.y = pCanvas.height;
+        if (f.y > pCanvas.height) f.y = 0;
+
+        pCtx.beginPath();
+        pCtx.arc(f.x, f.y, f.r, 0, Math.PI * 2);
+        pCtx.fillStyle = `rgba(251, 233, 208, ${0.22 + Math.abs(Math.sin(Date.now() * 0.002 + f.x)) * 0.45})`;
+        pCtx.fill();
+    });
+
+    cCtx.clearRect(0, 0, cCanvas.width, cCanvas.height);
+    for (let i = confettiPieces.length - 1; i >= 0; i--) {
+        const c = confettiPieces[i];
+        c.x += c.vx;
+        c.y += c.vy;
+        c.vy += 0.34;
+        c.rot += c.vRot;
+
+        cCtx.save();
+        cCtx.translate(c.x, c.y);
+        cCtx.rotate((c.rot * Math.PI) / 180);
+        cCtx.fillStyle = c.color;
+        cCtx.fillRect(-c.size / 2, -c.size / 2, c.size, c.size * 0.65);
+        cCtx.restore();
+
+        if (c.y > cCanvas.height + 30) {
+            confettiPieces.splice(i, 1);
+        }
+    }
+
+    requestAnimationFrame(animateVisuals);
+}
+
+animateVisuals();
+
+// Initial render of scoreboard + board sizing behind the splash screen
+renderPlayersBar();
+    </script>
+</body>
+</html>
