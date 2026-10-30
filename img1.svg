@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 140">
+  <defs>
+    <radialGradient id="bodyGrad" cx="50%" cy="40%" r="60%">
+      <stop offset="0%" stop-color="#90AEAD"/>
+      <stop offset="100%" stop-color="#244855"/>
+    </radialGradient>
+    <radialGradient id="bellyGrad" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#FBE9D0"/>
+      <stop offset="100%" stop-color="#90AEAD"/>
+    </radialGradient>
+  </defs>
+  <path d="M150,95 Q185,80 175,55 Q165,40 150,55 Q160,65 145,80" fill="url(#bodyGrad)" stroke="#FBE9D0" stroke-width="3"/>
+  <ellipse cx="105" cy="85" rx="55" ry="38" fill="url(#bodyGrad)" stroke="#FBE9D0" stroke-width="3"/>
+  <ellipse cx="100" cy="95" rx="38" ry="22" fill="url(#bellyGrad)"/>
+  <polygon points="75,52 82,36 90,48 98,34 106,48 115,36 122,50" fill="#E64833" stroke="#FBE9D0" stroke-width="2"/>
+  <ellipse cx="68" cy="68" rx="36" ry="30" fill="url(#bodyGrad)" stroke="#FBE9D0" stroke-width="3"/>
+  <circle cx="52" cy="58" r="10" fill="#FBE9D0" stroke="#244855" stroke-width="2"/>
+  <circle cx="52" cy="58" r="6" fill="#244855"/>
+  <circle cx="50" cy="55" r="2.5" fill="#fff"/>
+  <circle cx="80" cy="58" r="11" fill="#FBE9D0" stroke="#244855" stroke-width="2"/>
+  <circle cx="80" cy="58" r="6.5" fill="#244855"/>
+  <circle cx="78" cy="55" r="2.5" fill="#fff"/>
+  <path d="M48,74 Q66,86 84,73" fill="none" stroke="#FBE9D0" stroke-width="3" stroke-linecap="round"/>
+</svg>
